@@ -335,3 +335,42 @@ button {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2); 
 }
+
+/* ── Drag & Drop ───────────────────────────────────────────────── */
+.drag-handle {
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.drag-handle:hover { opacity: 1; }
+.drag-handle:active { cursor: grabbing; }
+
+.step-drag-handle {
+  opacity: 0.35;
+}
+
+.task-dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.3) !important;
+}
+
+.task-drag-over {
+  border-color: var(--primary-color) !important;
+  background: rgba(99,102,241,0.08) !important;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.25) !important;
+}
+
+.step-dragging {
+  opacity: 0.35;
+  transform: scale(0.97);
+}
+
+.step-drag-over {
+  border-color: var(--primary-color) !important;
+  background: rgba(99,102,241,0.07) !important;
+}

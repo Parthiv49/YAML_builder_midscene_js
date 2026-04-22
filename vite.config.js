@@ -14,6 +14,8 @@ export default defineConfig({
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            // FIX: Also include on actual POST response (belt-and-suspenders)
+            res.setHeader('Access-Control-Allow-Private-Network', 'true');
 
             let body = '';
             req.on('data', chunk => body += chunk.toString());
@@ -37,6 +39,11 @@ export default defineConfig({
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            // FIX: Chrome Private Network Access (PNA) — required when any public
+            // HTTPS site runs the bookmarklet and tries to fetch http://localhost.
+            // Chrome sends a preflight with Access-Control-Request-Private-Network: true
+            // and BLOCKS the real request unless we respond with this header.
+            res.setHeader('Access-Control-Allow-Private-Network', 'true');
             res.writeHead(200);
             res.end();
           } else {

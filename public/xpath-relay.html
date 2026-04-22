@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>XPath Relay</title>
+  <style>
+    body { background: #0f172a; color: #94a3b8; font-family: monospace;
+           display: flex; align-items: center; justify-content: center;
+           height: 100vh; margin: 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="msg">Sending XPath to builder…</div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const xpath  = params.get('xpath');
+
+    if (xpath) {
+      // Write to localStorage — the yaml-builder tab (same origin) will receive
+      // a 'storage' event instantly without any page reload.
+      localStorage.setItem('pending_xpath', JSON.stringify({
+        xpath,
+        timestamp: Date.now()
+      }));
+      document.getElementById('msg').textContent = '✅ XPath sent! This tab will close…';
+    } else {
+      document.getElementById('msg').textContent = '⚠️ No XPath found in URL.';
+    }
+
+    // Auto-close after a short delay so the user can see the confirmation
+    setTimeout(() => window.close(), 800);
+  </script>
+</body>
+</html>

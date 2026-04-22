@@ -1,264 +1,185 @@
-# 🛠️ YAML Builder — Midscene AI Test Authoring Tool
+# YAML Builder
 
-A visual, browser-based tool for writing **Midscene AI** automation test scripts in YAML format — no manual YAML syntax required. Compose test tasks and steps through an intuitive form UI and get a clean, valid YAML file generated in real time.
+A React + Vite app for composing Midscene AI test files with a visual editor and live YAML preview.
 
----
+## What It Does
 
-## 📋 Table of Contents
+- Build test tasks and steps through a UI instead of hand-writing YAML
+- Preview generated YAML in real time
+- Reorder tasks and steps with drag-and-drop
+- Insert tasks/steps between existing items
+- Add optional XPath hints to AI steps
+- Copy YAML to clipboard or download as a `.yaml` file
+- Use a bookmarklet-based XPath picker while developing locally
 
-- [Overview](#overview)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Setup & Installation](#setup--installation)
-- [Running the App](#running-the-app)
-- [How It Works](#how-it-works)
-- [Step Types Reference](#step-types-reference)
-- [XPath Bookmarklet](#xpath-bookmarklet)
-- [Building for Production](#building-for-production)
-- [Dependencies](#dependencies)
+## Current Feature Set
 
----
+### Test Configuration
 
-## Overview
+The app generates YAML with:
 
-YAML Builder is a **React + Vite** single-page application designed for teams using the [Midscene AI](https://github.com/web-infra-dev/midscene) testing framework. Instead of hand-writing YAML test files, you use a two-panel UI:
+- `web.url` (editable)
+- `web.viewportWidth` (currently fixed to `1280` in app state)
+- `web.viewportHeight` (currently fixed to `800` in app state)
+- `agent.groupName` (editable)
+- `agent.generateReport` (currently fixed to `true`)
 
-- **Left Panel** — A form editor where you configure the target URL, viewport, and visually compose test tasks and steps.
-- **Right Panel** — A live YAML preview that updates instantly as you make changes, with one-click copy or download.
+### Browser Option
 
----
+You can toggle:
 
-## Features
+- `--deny-permission-prompts`
 
-- **Real-time YAML generation** — Every form change immediately reflects in the YAML output panel.
-- **8 built-in step types** — Covers all common Midscene AI actions: tap, input, key press, assert, query, wait, sleep, and raw JavaScript.
-- **Magic XPath Bookmarklet** — Drag a button to your bookmarks bar, click it on any website, then click any element to auto-fill its XPath directly into the selected step.
-- **Multi-task support** — Create and manage multiple named test tasks, each with their own flow of steps.
-- **Download or copy** — Export your finished test as `test.yaml` or copy it to clipboard instantly.
-- **Vite HMR WebSocket bridge** — The bookmarklet communicates with the app via a custom Vite dev-server middleware and WebSocket event, with no extra backend required.
+When enabled, it adds this to YAML:
 
----
+```yaml
+web:
+  chromeArgs:
+    - --deny-permission-prompts
+```
+
+### Project Description Requirement
+
+A project description is required before download:
+
+- Minimum 100 characters
+- Added as a top YAML comment: `# Description: ...`
+- Download button is blocked until valid
+
+Copy to clipboard still works from the preview panel.
+
+### Task and Step Editing
+
+- Multiple tasks supported
+- Each task can contain a flow of steps
+- Drag handles allow reordering tasks and steps
+- Hover separators allow inserting tasks/steps at specific positions
+
+Supported step types:
+
+- `aiTap`
+- `aiInput`
+- `aiKeyboardPress`
+- `aiAssert`
+- `aiQuery`
+- `aiWaitFor`
+- `sleep`
+- `javascript`
+
+Field behavior:
+
+- AI steps (`ai*`) support `instruction` and optional `xpath`
+- `aiInput` also supports `value`
+- `aiKeyboardPress` maps `value` to `keyName`
+- `aiWaitFor` maps `value` to numeric `timeout`
+- `sleep` maps numeric `value` to `sleep`
+- `javascript` maps `value` to `javascript`
+
+## XPath Picker Flow (Dev)
+
+The bookmarklet flow currently works through a relay page and localStorage:
+
+1. Drag **Pick XPath** from the app into your bookmarks bar
+2. Open your target site and click the bookmarklet
+3. Click an element to capture XPath
+4. Bookmarklet opens `public/xpath-relay.html` with XPath in query params
+5. Relay page writes `pending_xpath` to localStorage on the YAML Builder origin
+6. The app receives the storage event and applies XPath to the selected step
+
+If no step is selected, XPath is stored as pending and applied once a step is selected.
+
+## Dev Middleware Compatibility
+
+`vite.config.js` also includes a custom dev middleware:
+
+- `POST /api/xpath`
+- broadcasts `xpath:received` via Vite WebSocket
+- includes CORS + Private Network Access headers
+
+The app listens for that HMR custom event too, so both relay-based and middleware-based XPath delivery are supported in development.
 
 ## Project Structure
 
-```
+```txt
 yaml builder/
-├── index.html               ← App entry point, mounts #root div
-├── vite.config.js           ← Vite config + custom /api/xpath middleware
-├── package.json             ← Dependencies and npm scripts
-├── eslint.config.js         ← ESLint configuration
-├── public/
-│   ├── favicon.svg          ← App favicon
-│   └── icons.svg            ← SVG icon assets
-└── src/
-    ├── main.jsx             ← ReactDOM.createRoot → renders <App>
-    ├── App.jsx              ← Core app: state, UI, YAML logic, WS listener
-    ├── App.css              ← Minimal style overrides
-    ├── index.css            ← Full custom styling (panels, step cards, etc.)
-    └── assets/
-        ├── hero.png
-        ├── react.svg
-        └── vite.svg
+|-- index.html
+|-- package.json
+|-- vite.config.js
+|-- eslint.config.js
+|-- README.md
+|-- public/
+|   |-- favicon.svg
+|   |-- icons.svg
+|   `-- xpath-relay.html
+`-- src/
+    |-- App.css
+    |-- App.jsx
+    |-- index.css
+    |-- main.jsx
+    `-- assets/
+        |-- hero.png
+        |-- react.svg
+        `-- vite.svg
 ```
 
----
+## Tech Stack
 
-## Prerequisites
+Runtime dependencies:
 
-Before setting up the project, make sure you have the following installed:
+- `react`
+- `react-dom`
+- `js-yaml`
+- `lucide-react`
 
-| Tool | Minimum Version |
-|------|----------------|
-| Node.js | 18.x or higher |
-| npm | 8.x or higher |
+Build/dev dependencies:
 
----
+- `vite`
+- `@vitejs/plugin-react`
+- `eslint`
+- `@eslint/js`
+- `eslint-plugin-react-hooks`
+- `eslint-plugin-react-refresh`
+- `globals`
 
-## Setup & Installation
+## Getting Started
 
-**1. Extract the project**
+### Prerequisites
 
-```bash
-unzip yaml_builder.zip
-cd "yaml builder"
-```
+- Node.js 18+
+- npm 8+
 
-**2. Install dependencies**
+### Install
 
 ```bash
 npm install
 ```
 
-This installs React 19, `js-yaml`, `lucide-react`, Vite 8, and all dev dependencies.
-
----
-
-## Running the App
-
-**Start the development server:**
+### Run Dev Server
 
 ```bash
 npm run dev
 ```
 
-Vite starts the app at **`http://localhost:5173`**. Open this URL in your browser.
+Default URL:
 
-> **Note:** The XPath Bookmarklet feature and the `/api/xpath` middleware only work in development mode (`npm run dev`). They are not available in the production build.
+- `http://localhost:5173`
 
-**Other available scripts:**
-
-```bash
-npm run build     # Build for production (outputs to /dist)
-npm run preview   # Preview the production build locally
-npm run lint      # Run ESLint checks
-```
-
----
-
-## How It Works
-
-### Application Architecture
-
-The app is entirely contained in `src/App.jsx` and has two main pieces of React state:
-
-```
-config  →  { web: { url, viewportWidth, viewportHeight }, agent: { groupName, generateReport } }
-tasks   →  [ { id, name, flow: [ { id, type, instruction, xpath, value } ] } ]
-```
-
-Every state change triggers `generateYaml()`, which serialises the current state into a YAML string using `js-yaml.dump()` and renders it live in the right panel.
-
-### YAML Output Shape
-
-```yaml
-# Generated by Midscene AI Builder
-
-web:
-  url: ${APP_URL}
-  viewportWidth: 1280
-  viewportHeight: 800
-agent:
-  groupName: My Tests
-  generateReport: true
-tasks:
-  - name: My First Test
-    flow:
-      - aiTap: the Login button
-      - aiInput: the Username field
-        value: ${USERNAME}
-      - aiKeyboardPress: Press Enter to submit
-        keyName: Enter
-      - aiAssert: The dashboard is visible
-```
-
-### XPath Bookmarklet Flow
-
-```
-Target Website
-     │  (user clicks element)
-     ▼
-Browser Bookmarklet (injected JS)
-     │  computes XPath via DOM traversal
-     │  fetch POST → http://localhost:5173/api/xpath
-     ▼
-Vite Custom Middleware (/api/xpath)
-     │  parses JSON body
-     │  server.ws.send({ event: 'xpath:received', data })
-     ▼
-Vite HMR WebSocket
-     │  broadcasts to all connected clients
-     ▼
-React App (import.meta.hot.on listener)
-     │  finds the currently selected step by ID
-     ▼
-Tasks State Updated → step.xpath auto-filled
-```
-
----
-
-## Step Types Reference
-
-| Step Type | Label | What It Does | Key Field |
-|-----------|-------|--------------|-----------|
-| `aiTap` | Click / Tap | AI finds and clicks an element by description | `instruction` |
-| `aiInput` | Input / Type | AI types text into a field | `instruction`, `value` |
-| `aiKeyboardPress` | Press Key | Simulates a keyboard key press | `instruction`, `keyName` |
-| `aiAssert` | Assert / Verify | Confirms element or text is present | `instruction` |
-| `aiQuery` | Query / Extract | Extracts data from the page using natural language | `instruction` |
-| `aiWaitFor` | Wait For | Waits until a specific element or text appears | `instruction`, `timeout (ms)` |
-| `sleep` | Sleep / Delay | Pauses execution for a given duration | `value (ms)` |
-| `javascript` | JS Script | Runs custom JavaScript in the browser context | `value (JS code)` |
-
-All AI step types (`ai*`) accept an optional `xpath` field to give the AI a precise hint about which element to target, which reduces ambiguity and speeds up test execution.
-
----
-
-## XPath Bookmarklet
-
-The bookmarklet is a **zero-install browser tool** that lets you visually pick any element on a live website and have its XPath appear directly in the YAML Builder.
-
-### How to install
-
-1. Start the YAML Builder dev server (`npm run dev`).
-2. In the app, find the blue **"🎯 Magic XPath Picker Tool"** banner at the top of the left panel.
-3. **Drag** the **"Pick XPath"** button to your browser's bookmarks bar.
-
-### How to use
-
-1. In YAML Builder, select a step by clicking it (it will be highlighted with a purple border).
-2. Navigate to the website you are testing in the same browser.
-3. Click the **"Pick XPath"** bookmark — your cursor changes to a crosshair.
-4. Click any element on the page.
-5. Switch back to YAML Builder — the XPath field on your selected step will be auto-filled.
-
-> **Requirement:** The YAML Builder dev server must be running on `localhost:5173` when you use the bookmarklet, since it sends data back to that address.
-
----
-
-## Building for Production
+### Other Scripts
 
 ```bash
 npm run build
+npm run preview
+npm run lint
 ```
 
-The optimised output is written to the `dist/` folder and can be served by any static file host.
+## Production Notes
 
-**Important limitations in the production build:**
+`npm run build` outputs static files to `dist/`.
 
-- The `/api/xpath` middleware is a Vite dev-only feature and will not be present.
-- `import.meta.hot` is `undefined` in the production build, so the WebSocket XPath injection is disabled.
-- The bookmarklet will not function against a production build.
+Important limitations in production builds:
 
-All other functionality (form editing, YAML generation, copy, download) works identically in production.
+- Vite dev middleware (`/api/xpath`) is unavailable
+- `import.meta.hot` event channel is unavailable
+- Bookmarklet relay flow tied to local dev origin will not behave like dev authoring flow
 
----
-
-## Dependencies
-
-### Runtime
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `react` | ^19.2.4 | UI framework |
-| `react-dom` | ^19.2.4 | React DOM renderer |
-| `js-yaml` | ^4.1.1 | Serialises JS objects to YAML strings |
-| `lucide-react` | ^1.8.0 | Icon components |
-
-### Dev / Build
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `vite` | ^8.0.4 | Dev server and production bundler |
-| `@vitejs/plugin-react` | ^6.0.1 | React Fast Refresh via Oxc |
-| `eslint` | ^9.39.4 | Linting |
-| `eslint-plugin-react-hooks` | ^7.0.1 | React Hooks lint rules |
-| `globals` | ^17.4.0 | Global variable definitions for ESLint |
-
----
-
-## Notes
-
-- This project was bootstrapped with the official **Vite React template**.
-- The **React Compiler** is not enabled by default due to its impact on build performance. See the [React Compiler docs](https://react.dev/learn/react-compiler/installation) to enable it.
-- For production applications, consider migrating to **TypeScript** using the [Vite React TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts).
+Core YAML editing, preview, copy, and download continue to work.
